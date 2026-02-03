@@ -28,6 +28,9 @@ const snappySpring: SpringOptions = {
   mass: 0.3,
 };
 
+// Process stage enum for type safety
+export type ProcessStage = "hero" | "about" | "concept" | "design" | "build" | "host" | "maintain";
+
 export interface DotsContextValue {
   // Hydration state
   isMounted: boolean;
@@ -58,6 +61,12 @@ export interface DotsContextValue {
   // Base size in pixels
   baseSize: MotionValue<number>;
 
+  // Process section effects
+  fragmentSpread: MotionValue<number>; // 0 = together, 1 = fully spread
+  fragmentOpacity: MotionValue<number>; // Opacity of fragment dots
+  extraDotsOpacity: MotionValue<number>; // Opacity of multiplication dots
+  pulseIntensity: MotionValue<number>; // 0 = no pulse, 1 = full pulse
+
   // Spring-wrapped values for smooth transitions
   springs: {
     centerX: MotionValue<number>;
@@ -66,6 +75,9 @@ export interface DotsContextValue {
     scale: MotionValue<number>;
     skewX: MotionValue<number>;
     skewY: MotionValue<number>;
+    fragmentSpread: MotionValue<number>;
+    fragmentOpacity: MotionValue<number>;
+    extraDotsOpacity: MotionValue<number>;
   };
 
   // Methods to update values (animated via springs)
@@ -77,6 +89,10 @@ export interface DotsContextValue {
   setRotate3D: (x: number, y: number) => void;
   setOpacity: (opacity: number) => void;
   setBaseSize: (size: number) => void;
+  setFragmentSpread: (spread: number) => void;
+  setFragmentOpacity: (opacity: number) => void;
+  setExtraDotsOpacity: (opacity: number) => void;
+  setPulseIntensity: (intensity: number) => void;
 
   // Immediate setters (no animation, instant jump)
   setCenterImmediate: (x: number, y: number) => void;
@@ -104,6 +120,12 @@ export function DotsProvider({ children }: { children: ReactNode }) {
   const opacity = useMotionValue(0); // Start hidden, fade in after positioning
   const baseSize = useMotionValue(20);
 
+  // Process section effects
+  const fragmentSpread = useMotionValue(0);
+  const fragmentOpacity = useMotionValue(0);
+  const extraDotsOpacity = useMotionValue(0);
+  const pulseIntensity = useMotionValue(0);
+
   // Set mounted state after hydration
   useEffect(() => {
     setIsMounted(true);
@@ -116,6 +138,9 @@ export function DotsProvider({ children }: { children: ReactNode }) {
   const springScale = useSpring(scale, snappySpring);
   const springSkewX = useSpring(skewX, snappySpring);
   const springSkewY = useSpring(skewY, snappySpring);
+  const springFragmentSpread = useSpring(fragmentSpread, snappySpring);
+  const springFragmentOpacity = useSpring(fragmentOpacity, snappySpring);
+  const springExtraDotsOpacity = useSpring(extraDotsOpacity, snappySpring);
 
   // Setter methods for imperative updates
   const setCenter = (x: number, y: number) => {
@@ -152,6 +177,22 @@ export function DotsProvider({ children }: { children: ReactNode }) {
 
   const setBaseSize = (s: number) => {
     baseSize.set(s);
+  };
+
+  const setFragmentSpread = (spread: number) => {
+    fragmentSpread.set(spread);
+  };
+
+  const setFragmentOpacity = (o: number) => {
+    fragmentOpacity.set(o);
+  };
+
+  const setExtraDotsOpacity = (o: number) => {
+    extraDotsOpacity.set(o);
+  };
+
+  const setPulseIntensity = (intensity: number) => {
+    pulseIntensity.set(intensity);
   };
 
   // Immediate setters - use jump() to bypass spring animation
@@ -191,6 +232,10 @@ export function DotsProvider({ children }: { children: ReactNode }) {
     rotateY,
     opacity,
     baseSize,
+    fragmentSpread,
+    fragmentOpacity,
+    extraDotsOpacity,
+    pulseIntensity,
     springs: {
       centerX: springCenterX,
       centerY: springCenterY,
@@ -198,6 +243,9 @@ export function DotsProvider({ children }: { children: ReactNode }) {
       scale: springScale,
       skewX: springSkewX,
       skewY: springSkewY,
+      fragmentSpread: springFragmentSpread,
+      fragmentOpacity: springFragmentOpacity,
+      extraDotsOpacity: springExtraDotsOpacity,
     },
     setCenter,
     setOrbit,
@@ -207,6 +255,10 @@ export function DotsProvider({ children }: { children: ReactNode }) {
     setRotate3D,
     setOpacity,
     setBaseSize,
+    setFragmentSpread,
+    setFragmentOpacity,
+    setExtraDotsOpacity,
+    setPulseIntensity,
     setCenterImmediate,
     setOrbitImmediate,
     setScaleImmediate,
