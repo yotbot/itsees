@@ -28,9 +28,6 @@ const snappySpring: SpringOptions = {
   mass: 0.3,
 };
 
-// Process stage enum for type safety
-export type ProcessStage = "hero" | "about" | "concept" | "design" | "build" | "host" | "maintain";
-
 export interface DotsContextValue {
   // Hydration state
   isMounted: boolean;
@@ -39,7 +36,7 @@ export interface DotsContextValue {
   centerX: MotionValue<number>;
   centerY: MotionValue<number>;
 
-  // Individual dot offsets from center (for orbit radius)
+  // Main dots orbit (2 dots orbiting each other)
   orbitRadius: MotionValue<number>;
   orbitAngle: MotionValue<number>;
 
@@ -61,11 +58,19 @@ export interface DotsContextValue {
   // Base size in pixels
   baseSize: MotionValue<number>;
 
-  // Process section effects
-  fragmentSpread: MotionValue<number>; // 0 = together, 1 = fully spread
-  fragmentOpacity: MotionValue<number>; // Opacity of fragment dots
-  extraDotsOpacity: MotionValue<number>; // Opacity of multiplication dots
-  pulseIntensity: MotionValue<number>; // 0 = no pulse, 1 = full pulse
+  // === Process section effects ===
+
+  // Satellite dots (small dots that orbit each main dot)
+  satelliteOpacity: MotionValue<number>; // 0 = hidden, 1 = visible
+  satelliteOrbitRadius: MotionValue<number>; // Distance from parent dot
+  satelliteOrbitAngle: MotionValue<number>; // Rotation angle
+
+  // Merge effect (Host stage: 2 dots → 1 dot)
+  mergeProgress: MotionValue<number>; // 0 = separate, 1 = merged
+
+  // Emerge effect (Maintain stage: small dots emerge from merged dot)
+  emergeOpacity: MotionValue<number>; // 0 = hidden, 1 = visible
+  emergeOrbitAngle: MotionValue<number>; // Rotation angle for emerged dots
 
   // Spring-wrapped values for smooth transitions
   springs: {
@@ -75,9 +80,10 @@ export interface DotsContextValue {
     scale: MotionValue<number>;
     skewX: MotionValue<number>;
     skewY: MotionValue<number>;
-    fragmentSpread: MotionValue<number>;
-    fragmentOpacity: MotionValue<number>;
-    extraDotsOpacity: MotionValue<number>;
+    satelliteOpacity: MotionValue<number>;
+    satelliteOrbitRadius: MotionValue<number>;
+    mergeProgress: MotionValue<number>;
+    emergeOpacity: MotionValue<number>;
   };
 
   // Methods to update values (animated via springs)
@@ -89,10 +95,6 @@ export interface DotsContextValue {
   setRotate3D: (x: number, y: number) => void;
   setOpacity: (opacity: number) => void;
   setBaseSize: (size: number) => void;
-  setFragmentSpread: (spread: number) => void;
-  setFragmentOpacity: (opacity: number) => void;
-  setExtraDotsOpacity: (opacity: number) => void;
-  setPulseIntensity: (intensity: number) => void;
 
   // Immediate setters (no animation, instant jump)
   setCenterImmediate: (x: number, y: number) => void;
@@ -121,10 +123,12 @@ export function DotsProvider({ children }: { children: ReactNode }) {
   const baseSize = useMotionValue(20);
 
   // Process section effects
-  const fragmentSpread = useMotionValue(0);
-  const fragmentOpacity = useMotionValue(0);
-  const extraDotsOpacity = useMotionValue(0);
-  const pulseIntensity = useMotionValue(0);
+  const satelliteOpacity = useMotionValue(0);
+  const satelliteOrbitRadius = useMotionValue(30);
+  const satelliteOrbitAngle = useMotionValue(0);
+  const mergeProgress = useMotionValue(0);
+  const emergeOpacity = useMotionValue(0);
+  const emergeOrbitAngle = useMotionValue(0);
 
   // Set mounted state after hydration
   useEffect(() => {
@@ -138,9 +142,10 @@ export function DotsProvider({ children }: { children: ReactNode }) {
   const springScale = useSpring(scale, snappySpring);
   const springSkewX = useSpring(skewX, snappySpring);
   const springSkewY = useSpring(skewY, snappySpring);
-  const springFragmentSpread = useSpring(fragmentSpread, snappySpring);
-  const springFragmentOpacity = useSpring(fragmentOpacity, snappySpring);
-  const springExtraDotsOpacity = useSpring(extraDotsOpacity, snappySpring);
+  const springSatelliteOpacity = useSpring(satelliteOpacity, snappySpring);
+  const springSatelliteOrbitRadius = useSpring(satelliteOrbitRadius, snappySpring);
+  const springMergeProgress = useSpring(mergeProgress, defaultSpring);
+  const springEmergeOpacity = useSpring(emergeOpacity, snappySpring);
 
   // Setter methods for imperative updates
   const setCenter = (x: number, y: number) => {
@@ -177,22 +182,6 @@ export function DotsProvider({ children }: { children: ReactNode }) {
 
   const setBaseSize = (s: number) => {
     baseSize.set(s);
-  };
-
-  const setFragmentSpread = (spread: number) => {
-    fragmentSpread.set(spread);
-  };
-
-  const setFragmentOpacity = (o: number) => {
-    fragmentOpacity.set(o);
-  };
-
-  const setExtraDotsOpacity = (o: number) => {
-    extraDotsOpacity.set(o);
-  };
-
-  const setPulseIntensity = (intensity: number) => {
-    pulseIntensity.set(intensity);
   };
 
   // Immediate setters - use jump() to bypass spring animation
@@ -232,10 +221,12 @@ export function DotsProvider({ children }: { children: ReactNode }) {
     rotateY,
     opacity,
     baseSize,
-    fragmentSpread,
-    fragmentOpacity,
-    extraDotsOpacity,
-    pulseIntensity,
+    satelliteOpacity,
+    satelliteOrbitRadius,
+    satelliteOrbitAngle,
+    mergeProgress,
+    emergeOpacity,
+    emergeOrbitAngle,
     springs: {
       centerX: springCenterX,
       centerY: springCenterY,
@@ -243,9 +234,10 @@ export function DotsProvider({ children }: { children: ReactNode }) {
       scale: springScale,
       skewX: springSkewX,
       skewY: springSkewY,
-      fragmentSpread: springFragmentSpread,
-      fragmentOpacity: springFragmentOpacity,
-      extraDotsOpacity: springExtraDotsOpacity,
+      satelliteOpacity: springSatelliteOpacity,
+      satelliteOrbitRadius: springSatelliteOrbitRadius,
+      mergeProgress: springMergeProgress,
+      emergeOpacity: springEmergeOpacity,
     },
     setCenter,
     setOrbit,
@@ -255,10 +247,6 @@ export function DotsProvider({ children }: { children: ReactNode }) {
     setRotate3D,
     setOpacity,
     setBaseSize,
-    setFragmentSpread,
-    setFragmentOpacity,
-    setExtraDotsOpacity,
-    setPulseIntensity,
     setCenterImmediate,
     setOrbitImmediate,
     setScaleImmediate,

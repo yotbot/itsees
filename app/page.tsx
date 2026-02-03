@@ -5,7 +5,6 @@ import {
   useScroll,
   useTransform,
   useMotionValueEvent,
-  useMotionValue,
 } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { useDots } from "./context/DotsContext";
@@ -25,9 +24,6 @@ export default function Home() {
     width: 1000,
     height: 800,
   });
-
-  // Active process stage index (0-4, or -1 if not in process section)
-  const activeStageIndex = useMotionValue(-1);
 
   // Initialize dot positions based on SVG eye positions
   useEffect(() => {
@@ -87,23 +83,23 @@ export default function Home() {
   }, [dots]);
 
   // ============================================
-  // SCROLL MAPPING (total ~800vh)
+  // SCROLL MAPPING
   // ============================================
-  // Hero section: 0.00 - 0.15 (logo animation)
-  // Transition:   0.15 - 0.25 (dots grow, move)
-  // About:        0.25 - 0.35 (about visible)
-  // To Process:   0.35 - 0.40 (dots shrink, reposition)
-  // Process:      0.40 - 0.90 (5 stages, each ~0.10)
-  //   Concept:    0.40 - 0.50
-  //   Design:     0.50 - 0.60
-  //   Build:      0.60 - 0.70
-  //   Host:       0.70 - 0.80
-  //   Maintain:   0.80 - 0.90
-  // Footer:       0.90 - 1.00
+  // Hero section: 0.00 - 0.12 (logo animation)
+  // Transition:   0.12 - 0.20 (dots grow, move)
+  // About:        0.20 - 0.30 (about visible)
+  // To Process:   0.30 - 0.35 (dots shrink, reposition)
+  // Process:      0.35 - 0.85 (5 stages, each ~0.10)
+  //   Concept:    0.35 - 0.45 (smaller dots, faster orbit, closer)
+  //   Design:     0.45 - 0.55 (satellites appear and orbit)
+  //   Build:      0.55 - 0.65 (satellites absorbed, dots grow)
+  //   Host:       0.65 - 0.75 (2 dots merge into 1)
+  //   Maintain:   0.75 - 0.85 (2 small dots emerge and orbit)
+  // Footer:       0.85 - 1.00
   // ============================================
 
   // Text opacity - fades out early
-  const textOpacity = useTransform(scrollYProgress, [0.1, 0.18], [1, 0]);
+  const textOpacity = useTransform(scrollYProgress, [0.08, 0.14], [1, 0]);
 
   // Horizontal offset relative to text width
   const rightOffset = textWidth * 0.05;
@@ -116,17 +112,15 @@ export default function Home() {
   // Position for Process section (smaller dots on the right side)
   const processCenterX = viewportSize.width * 0.7;
   const processCenterY = viewportSize.height * 0.5;
-  const processOrbitRadius = viewportSize.width * 0.08;
-  const processScale = 3;
 
   // ============================================
-  // HERO → ABOUT TRANSITIONS
+  // HERO → ABOUT → PROCESS TRANSITIONS
   // ============================================
 
   // Center X: eyes → about position → process position
   const centerXProgress = useTransform(
     scrollYProgress,
-    [0, 0.05, 0.1, 0.15, 0.25, 0.38, 0.42],
+    [0, 0.04, 0.08, 0.12, 0.20, 0.30, 0.35],
     [
       initialCenter.x,
       initialCenter.x + rightOffset,
@@ -141,42 +135,48 @@ export default function Home() {
   // Center Y: eyes → about → process
   const centerYProgress = useTransform(
     scrollYProgress,
-    [0, 0.15, 0.25, 0.38, 0.42],
+    [0, 0.12, 0.20, 0.30, 0.35],
     [initialCenter.y, initialCenter.y, aboutCenterY, aboutCenterY, processCenterY]
   );
 
-  // Scale: normal → huge → process size
+  // Scale transitions through all stages
+  // Concept: smaller (2), Design/Build: medium (3-4), Host/Maintain: larger (5)
   const scrollScale = useTransform(
     scrollYProgress,
-    [0, 0.15, 0.22, 0.30, 0.38, 0.42],
-    [1, 1, 15, 40, 40, processScale]
+    [0, 0.12, 0.18, 0.25, 0.30, 0.35, 0.45, 0.55, 0.65, 0.75],
+    [1, 1, 15, 40, 40, 2, 2.5, 4, 5, 5]
   );
 
-  // Orbit radius: initial → about spread → process tight
+  // Orbit radius: process stages get progressively tighter until merge
+  const processOrbitBase = viewportSize.width * 0.06;
   const scrollOrbitRadius = useTransform(
     scrollYProgress,
-    [0, 0.15, 0.22, 0.30, 0.38, 0.42],
+    [0, 0.12, 0.18, 0.25, 0.30, 0.35, 0.45, 0.55, 0.65, 0.75],
     [
       initialRadius,
       initialRadius,
       initialRadius * 3,
       aboutOrbitRadius,
       aboutOrbitRadius,
-      processOrbitRadius,
+      processOrbitBase * 1.5, // Concept: wider orbit
+      processOrbitBase * 0.8, // Concept end: closer together
+      processOrbitBase * 0.8, // Design: same
+      processOrbitBase * 0.6, // Build: tighter
+      0, // Host: merged (radius = 0)
     ]
   );
 
-  // Orbit angle: rotate during hero, settle for about, continuous for process
+  // Orbit angle: faster rotation during Concept stage
   const scrollOrbitAngle = useTransform(
     scrollYProgress,
-    [0, 0.15, 0.30, 0.42, 0.50, 0.90],
-    [0, 0, 305, 305, 305 + 360, 305 + 360 * 3]
+    [0, 0.12, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85],
+    [0, 0, 305, 305, 305 + 720, 305 + 720 + 180, 305 + 720 + 360, 305 + 720 + 360, 305 + 720 + 360]
   );
 
   // Color transition
   const scrollColor = useTransform(
     scrollYProgress,
-    [0, 0.18, 0.30, 0.42, 0.55],
+    [0, 0.14, 0.25, 0.35, 0.50],
     ["#171717", "#171717", "#3b82f6", "#3b82f6", "#60a5fa"]
   );
 
@@ -185,55 +185,55 @@ export default function Home() {
   // ============================================
 
   // About section opacity
-  const aboutOpacity = useTransform(scrollYProgress, [0.25, 0.30, 0.36, 0.40], [0, 1, 1, 0]);
-  const aboutY = useTransform(scrollYProgress, [0.25, 0.30], [40, 0]);
+  const aboutOpacity = useTransform(scrollYProgress, [0.20, 0.24, 0.28, 0.32], [0, 1, 1, 0]);
+  const aboutY = useTransform(scrollYProgress, [0.20, 0.24], [40, 0]);
 
   // Process section opacity
-  const processOpacity = useTransform(scrollYProgress, [0.40, 0.44], [0, 1]);
+  const processOpacity = useTransform(scrollYProgress, [0.33, 0.37], [0, 1]);
 
   // ============================================
   // PROCESS STAGE EFFECTS
   // ============================================
 
-  // Fragment effect (DESIGN stage: 0.50-0.60)
-  const fragmentSpread = useTransform(
-    scrollYProgress,
-    [0.50, 0.52, 0.56, 0.58],
-    [0, 1, 1, 0]
+  // Satellite orbit radius (constant when visible)
+  const satelliteOrbitRadius = useTransform(
+    [scrollScale],
+    ([s]: number[]) => s * 15 // Satellites orbit at 15px * scale from their parent
   );
 
-  const fragmentOpacity = useTransform(
+  // Satellite opacity: appear in Design, fade in Build (absorbed)
+  const satelliteOpacity = useTransform(
     scrollYProgress,
-    [0.50, 0.51, 0.57, 0.58],
-    [0, 1, 1, 0]
+    [0.45, 0.48, 0.55, 0.60, 0.65],
+    [0, 1, 1, 0.3, 0]
   );
 
-  // Extra dots (BUILD stage: 0.60-0.70)
-  const extraDotsOpacity = useTransform(
+  // Satellite orbit angle (continuous rotation)
+  const satelliteOrbitAngle = useTransform(
     scrollYProgress,
-    [0.60, 0.62, 0.66, 0.68],
-    [0, 1, 1, 0]
+    [0.45, 0.55, 0.65],
+    [0, 720, 1080]
   );
 
-  // Build stage scale boost
-  const buildScaleBoost = useTransform(
+  // Merge progress: 0 = two dots, 1 = one merged dot (Host stage)
+  const mergeProgress = useTransform(
     scrollYProgress,
-    [0.60, 0.64, 0.68, 0.70],
-    [1, 1.5, 1.5, 1]
+    [0.65, 0.70, 0.75],
+    [0, 0.5, 1]
   );
 
-  // Host stage - shoot outward (0.70-0.80)
-  const hostOrbitMultiplier = useTransform(
+  // Emerge opacity: small dots emerge in Maintain stage
+  const emergeOpacity = useTransform(
     scrollYProgress,
-    [0.70, 0.72, 0.76, 0.78],
-    [1, 0.3, 0.3, 3]
+    [0.75, 0.78, 0.85],
+    [0, 1, 1]
   );
 
-  // Maintain stage - pulse (0.80-0.90)
-  const pulseIntensity = useTransform(
+  // Emerge orbit angle (gentle rotation)
+  const emergeOrbitAngle = useTransform(
     scrollYProgress,
-    [0.80, 0.82, 0.88, 0.90],
-    [0, 1, 1, 0]
+    [0.75, 0.85, 1.0],
+    [0, 180, 360]
   );
 
   // ============================================
@@ -248,26 +248,12 @@ export default function Home() {
     dots.centerY.set(latest);
   });
 
-  // Combined scale with build boost
   useMotionValueEvent(scrollScale, "change", (latest) => {
-    const boost = buildScaleBoost.get();
-    dots.scale.set(latest * boost);
+    dots.scale.set(latest);
   });
 
-  useMotionValueEvent(buildScaleBoost, "change", (boost) => {
-    const base = scrollScale.get();
-    dots.scale.set(base * boost);
-  });
-
-  // Combined orbit radius with host multiplier
   useMotionValueEvent(scrollOrbitRadius, "change", (latest) => {
-    const mult = hostOrbitMultiplier.get();
-    dots.orbitRadius.set(latest * mult);
-  });
-
-  useMotionValueEvent(hostOrbitMultiplier, "change", (mult) => {
-    const base = scrollOrbitRadius.get();
-    dots.orbitRadius.set(base * mult);
+    dots.orbitRadius.set(latest);
   });
 
   useMotionValueEvent(scrollOrbitAngle, "change", (latest) => {
@@ -278,40 +264,29 @@ export default function Home() {
     dots.setColor(latest);
   });
 
-  // Process effects
-  useMotionValueEvent(fragmentSpread, "change", (latest) => {
-    dots.setFragmentSpread(latest);
+  // Process stage effects
+  useMotionValueEvent(satelliteOpacity, "change", (latest) => {
+    dots.satelliteOpacity.set(latest);
   });
 
-  useMotionValueEvent(fragmentOpacity, "change", (latest) => {
-    dots.setFragmentOpacity(latest);
+  useMotionValueEvent(satelliteOrbitRadius, "change", (latest) => {
+    dots.satelliteOrbitRadius.set(latest);
   });
 
-  useMotionValueEvent(extraDotsOpacity, "change", (latest) => {
-    dots.setExtraDotsOpacity(latest);
+  useMotionValueEvent(satelliteOrbitAngle, "change", (latest) => {
+    dots.satelliteOrbitAngle.set(latest);
   });
 
-  useMotionValueEvent(pulseIntensity, "change", (latest) => {
-    dots.setPulseIntensity(latest);
+  useMotionValueEvent(mergeProgress, "change", (latest) => {
+    dots.mergeProgress.set(latest);
   });
 
-  // Update active stage index
-  useMotionValueEvent(scrollYProgress, "change", (progress) => {
-    if (progress < 0.40) {
-      activeStageIndex.set(-1);
-    } else if (progress < 0.50) {
-      activeStageIndex.set(0); // Concept
-    } else if (progress < 0.60) {
-      activeStageIndex.set(1); // Design
-    } else if (progress < 0.70) {
-      activeStageIndex.set(2); // Build
-    } else if (progress < 0.80) {
-      activeStageIndex.set(3); // Host
-    } else if (progress < 0.90) {
-      activeStageIndex.set(4); // Maintain
-    } else {
-      activeStageIndex.set(-1);
-    }
+  useMotionValueEvent(emergeOpacity, "change", (latest) => {
+    dots.emergeOpacity.set(latest);
+  });
+
+  useMotionValueEvent(emergeOrbitAngle, "change", (latest) => {
+    dots.emergeOrbitAngle.set(latest);
   });
 
   return (
@@ -369,7 +344,7 @@ export default function Home() {
       <div className="h-[50vh]" />
 
       {/* Process section */}
-      <ProcessSection opacity={processOpacity} activeStageIndex={activeStageIndex} />
+      <ProcessSection opacity={processOpacity} />
 
       {/* Footer space */}
       <div className="h-screen" />

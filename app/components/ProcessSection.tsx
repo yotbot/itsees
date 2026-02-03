@@ -49,12 +49,10 @@ const stages: ProcessStage[] = [
 
 interface ProcessSectionProps {
   opacity: MotionValue<number>;
-  activeStageIndex: MotionValue<number>;
 }
 
 export default function ProcessSection({
   opacity,
-  activeStageIndex,
 }: ProcessSectionProps) {
   return (
     <motion.section
@@ -66,7 +64,6 @@ export default function ProcessSection({
           key={stage.id}
           stage={stage}
           index={index}
-          activeStageIndex={activeStageIndex}
         />
       ))}
     </motion.section>
@@ -76,17 +73,15 @@ export default function ProcessSection({
 interface ProcessStageSectionProps {
   stage: ProcessStage;
   index: number;
-  activeStageIndex: MotionValue<number>;
 }
 
 function ProcessStageSection({
   stage,
   index,
-  activeStageIndex,
 }: ProcessStageSectionProps) {
   return (
     <div
-      className="min-h-[500px] flex items-center"
+      className="min-h-[80vh] flex items-center"
       data-stage={stage.id}
       data-index={index}
     >

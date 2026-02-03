@@ -3,15 +3,6 @@
 import { motion, useTransform, type MotionValue } from "framer-motion";
 import { useDots } from "../context/DotsContext";
 
-// Fragment offset angles for each main dot (creates burst pattern)
-const FRAGMENT_ANGLES = [0, 90, 180, 270]; // 4 fragments per dot
-
-// Extra dots for multiplication effect (offset from center)
-const EXTRA_DOT_OFFSETS = [
-  { angle: 45, distance: 0.3 },
-  { angle: 225, distance: 0.3 },
-];
-
 export default function FloatingDots() {
   const {
     isMounted,
@@ -22,121 +13,273 @@ export default function FloatingDots() {
     rotateY,
     opacity,
     baseSize,
-    pulseIntensity,
+    satelliteOrbitAngle,
+    emergeOrbitAngle,
   } = useDots();
 
-  // All hooks must be called before any conditional returns
-  // Calculate dot positions based on orbit
-  // Dot 1: negative X offset (left)
+  // ============================================
+  // MAIN DOTS POSITIONS
+  // ============================================
+
+  // Dot 1 position (left side of orbit)
   const dot1X = useTransform(
-    [springs.centerX, springs.orbitRadius, orbitAngle],
-    ([cx, radius, angle]: number[]) => {
+    [springs.centerX, springs.orbitRadius, orbitAngle, springs.mergeProgress],
+    ([cx, radius, angle, merge]: number[]) => {
       const rad = (angle * Math.PI) / 180;
-      return cx - radius * Math.cos(rad);
+      const effectiveRadius = radius * (1 - merge);
+      return cx - effectiveRadius * Math.cos(rad);
     }
   );
 
   const dot1Y = useTransform(
-    [springs.centerY, springs.orbitRadius, orbitAngle],
-    ([cy, radius, angle]: number[]) => {
+    [springs.centerY, springs.orbitRadius, orbitAngle, springs.mergeProgress],
+    ([cy, radius, angle, merge]: number[]) => {
       const rad = (angle * Math.PI) / 180;
-      return cy - radius * Math.sin(rad);
+      const effectiveRadius = radius * (1 - merge);
+      return cy - effectiveRadius * Math.sin(rad);
     }
   );
 
-  // Dot 2: positive X offset (right)
+  // Dot 2 position (right side of orbit)
   const dot2X = useTransform(
-    [springs.centerX, springs.orbitRadius, orbitAngle],
-    ([cx, radius, angle]: number[]) => {
+    [springs.centerX, springs.orbitRadius, orbitAngle, springs.mergeProgress],
+    ([cx, radius, angle, merge]: number[]) => {
       const rad = (angle * Math.PI) / 180;
-      return cx + radius * Math.cos(rad);
+      const effectiveRadius = radius * (1 - merge);
+      return cx + effectiveRadius * Math.cos(rad);
     }
   );
 
   const dot2Y = useTransform(
-    [springs.centerY, springs.orbitRadius, orbitAngle],
-    ([cy, radius, angle]: number[]) => {
+    [springs.centerY, springs.orbitRadius, orbitAngle, springs.mergeProgress],
+    ([cy, radius, angle, merge]: number[]) => {
       const rad = (angle * Math.PI) / 180;
-      return cy + radius * Math.sin(rad);
+      const effectiveRadius = radius * (1 - merge);
+      return cy + effectiveRadius * Math.sin(rad);
     }
   );
 
-  // Compute size from baseSize and scale, with pulse effect
-  const size = useTransform(
-    [baseSize, springs.scale, pulseIntensity],
-    ([base, s, pulse]: number[]) => {
-      // Pulse adds subtle breathing effect (±5% when intensity is 1)
-      const pulseMultiplier = 1 + pulse * 0.05 * Math.sin(Date.now() / 500);
-      return base * s * pulseMultiplier;
+  // ============================================
+  // MAIN DOTS SIZES & OPACITY
+  // ============================================
+
+  const mainDotSize = useTransform(
+    [baseSize, springs.scale, springs.mergeProgress],
+    ([base, s, merge]: number[]) => {
+      const mergeBoost = 1 + merge * 0.5;
+      return base * s * mergeBoost;
     }
   );
 
-  // Fragment size (smaller than main dots)
-  const fragmentSize = useTransform(
+  const dot2Opacity = useTransform(
+    [opacity, springs.mergeProgress],
+    ([op, merge]: number[]) => op * (1 - merge)
+  );
+
+  // ============================================
+  // SATELLITE DOTS (4 per main dot, at 0°, 90°, 180°, 270°)
+  // ============================================
+
+  const satelliteSize = useTransform(
+    [baseSize, springs.scale],
+    ([base, s]: number[]) => base * s * 0.25
+  );
+
+  // Satellite opacity that fades with merge
+  const sat2Opacity = useTransform(
+    [springs.satelliteOpacity, springs.mergeProgress],
+    ([satOp, merge]: number[]) => satOp * (1 - merge)
+  );
+
+  // Satellite 1-1 (Dot 1, angle 0°)
+  const sat1_1_x = useTransform(
+    [dot1X, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dx, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((0 + angle) * Math.PI) / 180;
+      return dx + effectiveRadius * Math.cos(rad);
+    }
+  );
+  const sat1_1_y = useTransform(
+    [dot1Y, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dy, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((0 + angle) * Math.PI) / 180;
+      return dy + effectiveRadius * Math.sin(rad);
+    }
+  );
+
+  // Satellite 1-2 (Dot 1, angle 90°)
+  const sat1_2_x = useTransform(
+    [dot1X, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dx, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((90 + angle) * Math.PI) / 180;
+      return dx + effectiveRadius * Math.cos(rad);
+    }
+  );
+  const sat1_2_y = useTransform(
+    [dot1Y, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dy, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((90 + angle) * Math.PI) / 180;
+      return dy + effectiveRadius * Math.sin(rad);
+    }
+  );
+
+  // Satellite 1-3 (Dot 1, angle 180°)
+  const sat1_3_x = useTransform(
+    [dot1X, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dx, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((180 + angle) * Math.PI) / 180;
+      return dx + effectiveRadius * Math.cos(rad);
+    }
+  );
+  const sat1_3_y = useTransform(
+    [dot1Y, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dy, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((180 + angle) * Math.PI) / 180;
+      return dy + effectiveRadius * Math.sin(rad);
+    }
+  );
+
+  // Satellite 1-4 (Dot 1, angle 270°)
+  const sat1_4_x = useTransform(
+    [dot1X, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dx, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((270 + angle) * Math.PI) / 180;
+      return dx + effectiveRadius * Math.cos(rad);
+    }
+  );
+  const sat1_4_y = useTransform(
+    [dot1Y, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dy, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((270 + angle) * Math.PI) / 180;
+      return dy + effectiveRadius * Math.sin(rad);
+    }
+  );
+
+  // Satellite 2-1 (Dot 2, angle 0°)
+  const sat2_1_x = useTransform(
+    [dot2X, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dx, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((0 + angle) * Math.PI) / 180;
+      return dx + effectiveRadius * Math.cos(rad);
+    }
+  );
+  const sat2_1_y = useTransform(
+    [dot2Y, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dy, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((0 + angle) * Math.PI) / 180;
+      return dy + effectiveRadius * Math.sin(rad);
+    }
+  );
+
+  // Satellite 2-2 (Dot 2, angle 90°)
+  const sat2_2_x = useTransform(
+    [dot2X, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dx, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((90 + angle) * Math.PI) / 180;
+      return dx + effectiveRadius * Math.cos(rad);
+    }
+  );
+  const sat2_2_y = useTransform(
+    [dot2Y, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dy, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((90 + angle) * Math.PI) / 180;
+      return dy + effectiveRadius * Math.sin(rad);
+    }
+  );
+
+  // Satellite 2-3 (Dot 2, angle 180°)
+  const sat2_3_x = useTransform(
+    [dot2X, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dx, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((180 + angle) * Math.PI) / 180;
+      return dx + effectiveRadius * Math.cos(rad);
+    }
+  );
+  const sat2_3_y = useTransform(
+    [dot2Y, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dy, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((180 + angle) * Math.PI) / 180;
+      return dy + effectiveRadius * Math.sin(rad);
+    }
+  );
+
+  // Satellite 2-4 (Dot 2, angle 270°)
+  const sat2_4_x = useTransform(
+    [dot2X, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dx, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((270 + angle) * Math.PI) / 180;
+      return dx + effectiveRadius * Math.cos(rad);
+    }
+  );
+  const sat2_4_y = useTransform(
+    [dot2Y, springs.satelliteOrbitRadius, satelliteOrbitAngle, springs.satelliteOpacity],
+    ([dy, radius, angle, satOpacity]: number[]) => {
+      const effectiveRadius = radius * satOpacity;
+      const rad = ((270 + angle) * Math.PI) / 180;
+      return dy + effectiveRadius * Math.sin(rad);
+    }
+  );
+
+  // ============================================
+  // EMERGED DOTS (2 dots that emerge in Maintain stage)
+  // ============================================
+
+  const emergedSize = useTransform(
     [baseSize, springs.scale],
     ([base, s]: number[]) => base * s * 0.3
   );
 
-  // Fragment positions for dot 1
-  const fragment1Positions = FRAGMENT_ANGLES.map((angle) => {
-    const x = useTransform(
-      [dot1X, springs.fragmentSpread, springs.scale, baseSize],
-      ([dx, spread, s, base]: number[]) => {
-        const rad = (angle * Math.PI) / 180;
-        const distance = spread * base * s * 1.5;
-        return dx + distance * Math.cos(rad);
-      }
-    );
-    const y = useTransform(
-      [dot1Y, springs.fragmentSpread, springs.scale, baseSize],
-      ([dy, spread, s, base]: number[]) => {
-        const rad = (angle * Math.PI) / 180;
-        const distance = spread * base * s * 1.5;
-        return dy + distance * Math.sin(rad);
-      }
-    );
-    return { x, y };
-  });
+  const emergedOrbitRadius = useTransform(
+    [baseSize, springs.scale, springs.emergeOpacity],
+    ([base, s, emOpacity]: number[]) => base * s * 1.5 * emOpacity
+  );
 
-  // Fragment positions for dot 2
-  const fragment2Positions = FRAGMENT_ANGLES.map((angle) => {
-    const x = useTransform(
-      [dot2X, springs.fragmentSpread, springs.scale, baseSize],
-      ([dx, spread, s, base]: number[]) => {
-        const rad = (angle * Math.PI) / 180;
-        const distance = spread * base * s * 1.5;
-        return dx + distance * Math.cos(rad);
-      }
-    );
-    const y = useTransform(
-      [dot2Y, springs.fragmentSpread, springs.scale, baseSize],
-      ([dy, spread, s, base]: number[]) => {
-        const rad = (angle * Math.PI) / 180;
-        const distance = spread * base * s * 1.5;
-        return dy + distance * Math.sin(rad);
-      }
-    );
-    return { x, y };
-  });
+  // Emerged dot 1 (angle 0°)
+  const emerged1_x = useTransform(
+    [springs.centerX, emergedOrbitRadius, emergeOrbitAngle],
+    ([cx, radius, angle]: number[]) => {
+      const rad = ((0 + angle) * Math.PI) / 180;
+      return cx + radius * Math.cos(rad);
+    }
+  );
+  const emerged1_y = useTransform(
+    [springs.centerY, emergedOrbitRadius, emergeOrbitAngle],
+    ([cy, radius, angle]: number[]) => {
+      const rad = ((0 + angle) * Math.PI) / 180;
+      return cy + radius * Math.sin(rad);
+    }
+  );
 
-  // Extra dot positions (for multiplication effect)
-  const extraDotPositions = EXTRA_DOT_OFFSETS.map((offset) => {
-    const x = useTransform(
-      [springs.centerX, springs.orbitRadius],
-      ([cx, radius]: number[]) => {
-        const rad = (offset.angle * Math.PI) / 180;
-        return cx + radius * offset.distance * Math.cos(rad);
-      }
-    );
-    const y = useTransform(
-      [springs.centerY, springs.orbitRadius],
-      ([cy, radius]: number[]) => {
-        const rad = (offset.angle * Math.PI) / 180;
-        return cy + radius * offset.distance * Math.sin(rad);
-      }
-    );
-    return { x, y };
-  });
+  // Emerged dot 2 (angle 180°)
+  const emerged2_x = useTransform(
+    [springs.centerX, emergedOrbitRadius, emergeOrbitAngle],
+    ([cx, radius, angle]: number[]) => {
+      const rad = ((180 + angle) * Math.PI) / 180;
+      return cx + radius * Math.cos(rad);
+    }
+  );
+  const emerged2_y = useTransform(
+    [springs.centerY, emergedOrbitRadius, emergeOrbitAngle],
+    ([cy, radius, angle]: number[]) => {
+      const rad = ((180 + angle) * Math.PI) / 180;
+      return cy + radius * Math.sin(rad);
+    }
+  );
 
   // Don't render until after hydration to avoid mismatch
   if (!isMounted) {
@@ -151,55 +294,53 @@ export default function FloatingDots() {
         perspective: "1000px",
       }}
     >
-      {/* Fragment dots for Dot 1 */}
-      {fragment1Positions.map((pos, i) => (
-        <FragmentDot
-          key={`frag1-${i}`}
-          x={pos.x}
-          y={pos.y}
-          size={fragmentSize}
-          color={color}
-          opacity={springs.fragmentOpacity}
-          rotateX={rotateX}
-          rotateY={rotateY}
-        />
-      ))}
+      {/* Satellite dots for Dot 1 */}
+      <SatelliteDot x={sat1_1_x} y={sat1_1_y} size={satelliteSize} color={color} opacity={springs.satelliteOpacity} rotateX={rotateX} rotateY={rotateY} />
+      <SatelliteDot x={sat1_2_x} y={sat1_2_y} size={satelliteSize} color={color} opacity={springs.satelliteOpacity} rotateX={rotateX} rotateY={rotateY} />
+      <SatelliteDot x={sat1_3_x} y={sat1_3_y} size={satelliteSize} color={color} opacity={springs.satelliteOpacity} rotateX={rotateX} rotateY={rotateY} />
+      <SatelliteDot x={sat1_4_x} y={sat1_4_y} size={satelliteSize} color={color} opacity={springs.satelliteOpacity} rotateX={rotateX} rotateY={rotateY} />
 
-      {/* Fragment dots for Dot 2 */}
-      {fragment2Positions.map((pos, i) => (
-        <FragmentDot
-          key={`frag2-${i}`}
-          x={pos.x}
-          y={pos.y}
-          size={fragmentSize}
-          color={color}
-          opacity={springs.fragmentOpacity}
-          rotateX={rotateX}
-          rotateY={rotateY}
-        />
-      ))}
+      {/* Satellite dots for Dot 2 (fade with merge) */}
+      <SatelliteDot x={sat2_1_x} y={sat2_1_y} size={satelliteSize} color={color} opacity={sat2Opacity} rotateX={rotateX} rotateY={rotateY} />
+      <SatelliteDot x={sat2_2_x} y={sat2_2_y} size={satelliteSize} color={color} opacity={sat2Opacity} rotateX={rotateX} rotateY={rotateY} />
+      <SatelliteDot x={sat2_3_x} y={sat2_3_y} size={satelliteSize} color={color} opacity={sat2Opacity} rotateX={rotateX} rotateY={rotateY} />
+      <SatelliteDot x={sat2_4_x} y={sat2_4_y} size={satelliteSize} color={color} opacity={sat2Opacity} rotateX={rotateX} rotateY={rotateY} />
 
-      {/* Extra dots for multiplication effect */}
-      {extraDotPositions.map((pos, i) => (
-        <motion.div
-          key={`extra-${i}`}
-          className="absolute rounded-full"
-          style={{
-            x: pos.x,
-            y: pos.y,
-            translateX: "-50%",
-            translateY: "-50%",
-            width: size,
-            height: size,
-            backgroundColor: color,
-            rotateX,
-            rotateY,
-            opacity: springs.extraDotsOpacity,
-            willChange: "transform, background-color",
-            backfaceVisibility: "hidden",
-          }}
-        />
-      ))}
+      {/* Emerged dots (Maintain stage) */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          x: emerged1_x,
+          y: emerged1_y,
+          translateX: "-50%",
+          translateY: "-50%",
+          width: emergedSize,
+          height: emergedSize,
+          backgroundColor: color,
+          rotateX,
+          rotateY,
+          opacity: springs.emergeOpacity,
+          willChange: "transform, background-color",
+          backfaceVisibility: "hidden",
+        }}
+      />
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          x: emerged2_x,
+          y: emerged2_y,
+          translateX: "-50%",
+          translateY: "-50%",
+          width: emergedSize,
+          height: emergedSize,
+          backgroundColor: color,
+          rotateX,
+          rotateY,
+          opacity: springs.emergeOpacity,
+          willChange: "transform, background-color",
+          backfaceVisibility: "hidden",
+        }}
+      />
 
       {/* Main Dot 1 */}
       <motion.div
@@ -209,8 +350,8 @@ export default function FloatingDots() {
           y: dot1Y,
           translateX: "-50%",
           translateY: "-50%",
-          width: size,
-          height: size,
+          width: mainDotSize,
+          height: mainDotSize,
           backgroundColor: color,
           rotateX,
           rotateY,
@@ -222,7 +363,7 @@ export default function FloatingDots() {
         }}
       />
 
-      {/* Main Dot 2 */}
+      {/* Main Dot 2 (fades out when merging) */}
       <motion.div
         className="absolute rounded-full"
         style={{
@@ -230,14 +371,14 @@ export default function FloatingDots() {
           y: dot2Y,
           translateX: "-50%",
           translateY: "-50%",
-          width: size,
-          height: size,
+          width: mainDotSize,
+          height: mainDotSize,
           backgroundColor: color,
           rotateX,
           rotateY,
           skewX: springs.skewX,
           skewY: springs.skewY,
-          opacity,
+          opacity: dot2Opacity,
           willChange: "transform, background-color",
           backfaceVisibility: "hidden",
         }}
@@ -246,8 +387,8 @@ export default function FloatingDots() {
   );
 }
 
-// Fragment dot component for cleaner rendering
-interface FragmentDotProps {
+// Satellite dot component
+interface SatelliteDotProps {
   x: MotionValue<number>;
   y: MotionValue<number>;
   size: MotionValue<number>;
@@ -257,7 +398,7 @@ interface FragmentDotProps {
   rotateY: MotionValue<number>;
 }
 
-function FragmentDot({
+function SatelliteDot({
   x,
   y,
   size,
@@ -265,7 +406,7 @@ function FragmentDot({
   opacity,
   rotateX,
   rotateY,
-}: FragmentDotProps) {
+}: SatelliteDotProps) {
   return (
     <motion.div
       className="absolute rounded-full"
