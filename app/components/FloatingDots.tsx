@@ -66,7 +66,7 @@ export default function FloatingDots() {
     <div
       className="fixed inset-0 pointer-events-none overflow-hidden"
       style={{
-        zIndex: 9999,
+        zIndex: 1,
         perspective: "1000px",
       }}
     >

@@ -67,7 +67,7 @@ export interface DotsContextValue {
     skewY: MotionValue<number>;
   };
 
-  // Methods to update values
+  // Methods to update values (animated via springs)
   setCenter: (x: number, y: number) => void;
   setOrbit: (radius: number, angle: number) => void;
   setScale: (scale: number) => void;
@@ -76,6 +76,12 @@ export interface DotsContextValue {
   setRotate3D: (x: number, y: number) => void;
   setOpacity: (opacity: number) => void;
   setBaseSize: (size: number) => void;
+
+  // Immediate setters (no animation, instant jump)
+  setCenterImmediate: (x: number, y: number) => void;
+  setOrbitImmediate: (radius: number, angle: number) => void;
+  setScaleImmediate: (scale: number) => void;
+  setBaseSizeImmediate: (size: number) => void;
 }
 
 const DotsContext = createContext<DotsContextValue | null>(null);
@@ -94,7 +100,7 @@ export function DotsProvider({ children }: { children: ReactNode }) {
   const skewY = useMotionValue(0);
   const rotateX = useMotionValue(0);
   const rotateY = useMotionValue(0);
-  const opacity = useMotionValue(1);
+  const opacity = useMotionValue(0); // Start hidden, fade in after positioning
   const baseSize = useMotionValue(20);
 
   // Set mounted state after hydration
@@ -147,6 +153,29 @@ export function DotsProvider({ children }: { children: ReactNode }) {
     baseSize.set(s);
   };
 
+  // Immediate setters - use jump() to bypass spring animation
+  const setCenterImmediate = (x: number, y: number) => {
+    centerX.set(x);
+    centerY.set(y);
+    springCenterX.jump(x);
+    springCenterY.jump(y);
+  };
+
+  const setOrbitImmediate = (radius: number, angle: number) => {
+    orbitRadius.set(radius);
+    orbitAngle.set(angle);
+    springOrbitRadius.jump(radius);
+  };
+
+  const setScaleImmediate = (s: number) => {
+    scale.set(s);
+    springScale.jump(s);
+  };
+
+  const setBaseSizeImmediate = (s: number) => {
+    baseSize.set(s);
+  };
+
   const value: DotsContextValue = {
     isMounted,
     centerX,
@@ -177,6 +206,10 @@ export function DotsProvider({ children }: { children: ReactNode }) {
     setRotate3D,
     setOpacity,
     setBaseSize,
+    setCenterImmediate,
+    setOrbitImmediate,
+    setScaleImmediate,
+    setBaseSizeImmediate,
   };
 
   return <DotsContext.Provider value={value}>{children}</DotsContext.Provider>;
