@@ -14,17 +14,18 @@ import {
   type SpringOptions,
 } from "framer-motion";
 
-// Spring config for smooth, natural movement
+// Spring config for position (snappy, responsive)
 const defaultSpring: SpringOptions = {
-  stiffness: 100,
-  damping: 20,
-  mass: 1,
+  stiffness: 400,
+  damping: 40,
+  mass: 0.5,
 };
 
+// Spring config for scale/skew (slightly softer)
 const snappySpring: SpringOptions = {
-  stiffness: 300,
-  damping: 30,
-  mass: 0.5,
+  stiffness: 500,
+  damping: 50,
+  mass: 0.3,
 };
 
 export interface DotsContextValue {

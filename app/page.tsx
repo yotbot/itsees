@@ -8,6 +8,7 @@ import {
 } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { useDots } from "./context/DotsContext";
+import AboutSection from "./components/AboutSection";
 
 export default function Home() {
   const { scrollYProgress } = useScroll();
@@ -104,43 +105,42 @@ export default function Home() {
       initialCenter.x,
       initialCenter.x,
       finalCenterX,
-    ],
+    ]
   );
 
   // Center Y position: stays same initially → moves to final position
   const centerYProgress = useTransform(
     scrollYProgress,
     [0, 0.25, 0.4],
-    [initialCenter.y, initialCenter.y, finalCenterY],
+    [initialCenter.y, initialCenter.y, finalCenterY]
   );
 
   // Scale: grows huge - dots will be ~60% of viewport width each
   const scrollScale = useTransform(
     scrollYProgress,
     [0, 0.25, 0.5, 0.7],
-    [1, 1, 15, 40],
+    [1, 1, 15, 40]
   );
 
   // Orbit radius: expands to final spread
   const scrollOrbitRadius = useTransform(
     scrollYProgress,
     [0, 0.25, 0.5, 0.7],
-    [initialRadius, initialRadius, initialRadius * 3, finalOrbitRadius],
+    [initialRadius, initialRadius, initialRadius * 3, finalOrbitRadius]
   );
 
   // Orbit angle: rotate and end at 45° so dots are diagonal
-  // 720 + 45 = 765° (two full rotations + 45° offset)
   const scrollOrbitAngle = useTransform(
     scrollYProgress,
     [0, 0.25, 0.7],
-    [0, 0, 305],
+    [0, 0, 305]
   );
 
   // Color transition
   const scrollColor = useTransform(
     scrollYProgress,
     [0, 0.35, 0.6, 0.8],
-    ["#171717", "#171717", "#3b82f6", "#60a5fa"],
+    ["#171717", "#171717", "#3b82f6", "#60a5fa"]
   );
 
   // Section opacity - appears after dots settle
@@ -181,11 +181,11 @@ export default function Home() {
     <main className="relative bg-[#f5f5f0]">
       {/* Hero section - sticky container for logo animation */}
       <div className="h-[350vh]">
-        <div className="sticky top-0 flex min-h-screen items-center justify-center">
+        <div className="sticky top-0 z-10 flex min-h-screen items-center justify-center">
           <motion.svg
             ref={svgRef}
             viewBox="0 0 400 100"
-            className="w-[80vw] max-w-300 relative z-10"
+            className="w-[80vw] max-w-300"
             style={{ opacity: textOpacity }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -225,62 +225,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* About section - appears after dot animation completes */}
-      <motion.section
-        className="relative z-10 min-h-screen flex items-center"
-        style={{ opacity: sectionOpacity, y: sectionY }}
-      >
-        <div className="mx-auto max-w-4xl px-8 py-24">
-          <div className="space-y-8">
-            <h2 className="text-5xl font-bold tracking-tight text-neutral-900 sm:text-6xl">
-              Full-service web development
-            </h2>
-            <p className="text-xl leading-relaxed text-neutral-600 max-w-2xl">
-              We build custom websites that work. From initial concept to launch
-              and beyond, itsees partners with you through every step—design,
-              development, hosting, and ongoing support.
-            </p>
-            <div className="grid gap-6 sm:grid-cols-2 pt-8">
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-neutral-900">
-                  Custom Development
-                </h3>
-                <p className="text-neutral-600">
-                  No templates. Every project is built from scratch to match
-                  your unique needs and brand identity.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-neutral-900">
-                  Modern Tech Stack
-                </h3>
-                <p className="text-neutral-600">
-                  Fast, secure, and future-proof. We use the latest technologies
-                  to ensure your site performs at its best.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-neutral-900">
-                  Managed Hosting
-                </h3>
-                <p className="text-neutral-600">
-                  Reliable hosting with monitoring, backups, and updates handled
-                  for you. Focus on your business, not servers.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-neutral-900">
-                  Ongoing Partnership
-                </h3>
-                <p className="text-neutral-600">
-                  Your website evolves with your business. We&apos;re here for
-                  updates, improvements, and strategic guidance.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.section>
+      {/* About section */}
+      <AboutSection opacity={sectionOpacity} y={sectionY} />
 
       {/* Extra scroll space */}
       <div className="h-[50vh]" />
