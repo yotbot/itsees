@@ -15,11 +15,7 @@ export default function FloatingDots() {
     baseSize,
   } = useDots();
 
-  // Don't render until after hydration to avoid mismatch
-  if (!isMounted) {
-    return null;
-  }
-
+  // All hooks must be called before any conditional returns
   // Calculate dot positions based on orbit
   // Dot 1: negative X offset (left)
   const dot1X = useTransform(
@@ -61,6 +57,11 @@ export default function FloatingDots() {
     ([base, s]: number[]) => base * s
   );
 
+  // Don't render until after hydration to avoid mismatch
+  if (!isMounted) {
+    return null;
+  }
+
   return (
     <div
       className="fixed inset-0 pointer-events-none overflow-hidden"
@@ -73,25 +74,18 @@ export default function FloatingDots() {
       <motion.div
         className="absolute rounded-full"
         style={{
-          // Position (GPU-accelerated via transform)
           x: dot1X,
           y: dot1Y,
-          // Center the dot on its position
           translateX: "-50%",
           translateY: "-50%",
-          // Size
           width: size,
           height: size,
-          // Color
           backgroundColor: color,
-          // 3D transforms
           rotateX,
           rotateY,
           skewX: springs.skewX,
           skewY: springs.skewY,
-          // Opacity
           opacity,
-          // GPU acceleration hints
           willChange: "transform, background-color",
           backfaceVisibility: "hidden",
         }}
@@ -101,24 +95,18 @@ export default function FloatingDots() {
       <motion.div
         className="absolute rounded-full"
         style={{
-          // Position
           x: dot2X,
           y: dot2Y,
           translateX: "-50%",
           translateY: "-50%",
-          // Size
           width: size,
           height: size,
-          // Color
           backgroundColor: color,
-          // 3D transforms
           rotateX,
           rotateY,
           skewX: springs.skewX,
           skewY: springs.skewY,
-          // Opacity
           opacity,
-          // GPU acceleration
           willChange: "transform, background-color",
           backfaceVisibility: "hidden",
         }}
